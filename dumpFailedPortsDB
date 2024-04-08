@@ -1,0 +1,2 @@
+#! /bin/sh
+sqlite3 /tmp/FailedPorts.db "select * from FAILEDPORTS"

@@ -1,0 +1,36 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+uci -q batch <<-EOT
+	delete firewall.miniupnpd
+	set firewall.miniupnpd=include
+	set firewall.miniupnpd.type=script
+	set firewall.miniupnpd.path=/usr/share/miniupnpd/firewall.include
+	set firewall.miniupnpd.family=any
+	set firewall.miniupnpd.reload=1
+	commit firewall
+EOT
+
+fix_range() {
+	local section="$1"
+
+	config_get ext_ports "$section" ext_ports
+	config_get int_ports "$section" int_ports
+
+	[ -n "$ext_ports" ] || [ -n "$int_ports" ] || return 1
+
+	if [ "${ext_ports:0:2}" = "0-" ]; then
+		uci_set upnpd "$section" ext_ports "1-${ext_ports:2}"
+	fi
+
+	if [ "${int_ports:0:2}" = "0-" ]; then
+		uci_set upnpd "$section" int_ports "1-${int_ports:2}"
+	fi
+}
+
+config_load upnpd
+config_foreach fix_range perm_rule
+uci_commit upnpd
+
+exit 0
